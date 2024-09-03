@@ -1,0 +1,764 @@
+---
+title: "Statistical Analyses Script"
+author: "Karlis"
+date: "2024-06-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Libraries
+library(tidyverse)
+library(readxl)
+library(questionr)
+library(knitr)
+library(kableExtra)
+
+library(colorspace)
+library(sf)
+library(viridis)
+library(labelled)
+library(ggrepel)
+library(marmap)
+library(ggspatial)
+library(cowplot)
+
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Work directory
+setwd("C:/Users/SITAPHA/Documents/Travaux_Consultance/Karlhis YAO/Analyses_Karlis")
+
+# Database
+bd  <- read_excel("Base Karlhis.ok.xlsx")
+#head(bd)
+```
+
+# Relationship between geographic localization and prevalence of Wolbachia in the population of Aedes aegypti
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Filtrage de la base de données
+aegypti <- bd %>% filter(Species=="Aedes aegypti")
+
+# Calcul des totaux
+sex_table <- table(aegypti$Sex, aegypti$`Statut Wolbachia`)
+localization_table <- table(aegypti$Gergraphic.localization, aegypti$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+localization_table_percent <- prop.table(localization_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary <- as.data.frame.matrix(localization_table)
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Chi-square test pour le sexe
+chi_square_sex <- chisq.test(sex_table, correct = FALSE)
+chi_square_sex_result <- paste("Chi-squared:", round(chi_square_sex$statistic, 5))
+
+# Fisher's exact test pour la localisation
+fisher_exact_localization <- fisher.test(localization_table)
+fisher_exact_localization_result <- paste("OR =", round(fisher_exact_localization$estimate, 5))
+
+# Création du tableau
+table_data <- rbind(
+  c("Sex", "Female", sex_summary[1, "Negative"], sex_summary[1, "Positive"], chi_square_sex_result, 1, round(chi_square_sex$p.value, 4)),
+  c("Sex", "Male", sex_summary[2, "Negative"], sex_summary[2, "Positive"], "", "", ""),
+  c("Geographic localization", "North", localization_summary[1, "Negative"], localization_summary[1, "Positive"], fisher_exact_localization_result, "", round(fisher_exact_localization$p.value, 4)),
+  c("Geographic localization", "South", localization_summary[2, "Negative"], localization_summary[2, "Positive"], "", "", "")
+)
+
+#colnames(table_data) <- c("Category", "Sub-category", "Chi-squared/Fisher’s exact", "df", "P-value")
+
+# Affichage du tableau avec kable
+table_data %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Aedes aegypti") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+localization_summary <- as.data.frame.matrix(localization_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Combiner les tableaux
+final_summary <- rbind(
+  cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary),
+  cbind(Variable = "Geographic localization", Category = rownames(localization_summary), localization_summary)
+)
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Aedes aegypti") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Anophele gambiae s.l.
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Filtrage de la base de données
+Anophele_gambiae <- bd %>% filter(Species=="Anophele gambiae")
+
+# Calcul des totaux
+sex_table <- table(Anophele_gambiae$Sex, Anophele_gambiae$`Statut Wolbachia`)
+localization_table <- table(Anophele_gambiae$Gergraphic.localization, Anophele_gambiae$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+localization_table_percent <- prop.table(localization_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary <- as.data.frame.matrix(localization_table)
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Chi-square test pour le sexe
+chi_square_sex <- chisq.test(sex_table, correct = FALSE)
+chi_square_sex_result <- paste("Chi-squared:", round(chi_square_sex$statistic, 5))
+
+# Fisher's exact test pour la localisation
+fisher_exact_localization <- fisher.test(localization_table)
+fisher_exact_localization_result <- paste("OR =", round(fisher_exact_localization$estimate, 5))
+
+# Création du tableau
+table_data <- rbind(
+  c("Sex", "Female", sex_summary[1, "Negative"], sex_summary[1, "Positive"], chi_square_sex_result, 1, round(chi_square_sex$p.value, 4)),
+  c("Sex", "Male", sex_summary[2, "Negative"], sex_summary[2, "Positive"], "", "", ""),
+  c("Geographic localization", "North", localization_summary[1, "Negative"], localization_summary[1, "Positive"], fisher_exact_localization_result, "", round(fisher_exact_localization$p.value, 4)),
+  c("Geographic localization", "South", localization_summary[2, "Negative"], localization_summary[2, "Positive"], "", "", "")
+)
+
+#colnames(table_data) <- c("Category", "Sub-category", "Chi-squared/Fisher’s exact", "df", "P-value")
+
+# Affichage du tableau avec kable
+table_data %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Anophele gambiae") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+localization_summary <- as.data.frame.matrix(localization_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Combiner les tableaux
+final_summary <- rbind(
+  cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary),
+  cbind(Variable = "Geographic localization", Category = rownames(localization_summary), localization_summary)
+)
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Anophele gambiae") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Culex quinquefasciatus
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Filtrage de la base de données
+Culex_quinquefasciatus <- bd %>% filter(Species=="Culex quinquefasciatus")
+
+# Calcul des totaux
+sex_table <- table(Culex_quinquefasciatus$Sex, Culex_quinquefasciatus$`Statut Wolbachia`)
+localization_table <- table(Culex_quinquefasciatus$Gergraphic.localization, Culex_quinquefasciatus$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+localization_table_percent <- prop.table(localization_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary <- as.data.frame.matrix(localization_table)
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Chi-square test pour le sexe
+chi_square_sex <- chisq.test(sex_table, correct = FALSE)
+chi_square_sex_result <- paste("Chi-squared:", round(chi_square_sex$statistic, 5))
+
+# Fisher's exact test pour la localisation
+chi_square_localization <- chisq.test(localization_table)
+chi_square_localization_result <- paste("OR =", round(chi_square_localization$statistic, 5))
+
+# Création du tableau
+table_data <- rbind(
+  c("Sex", "Female", sex_summary[1, "Negative"], sex_summary[1, "Positive"], chi_square_sex_result, 1, round(chi_square_sex$p.value, 4)),
+  c("Sex", "Male", sex_summary[2, "Negative"], sex_summary[2, "Positive"], "", "", ""),
+  c("Geographic localization", "North", localization_summary[1, "Negative"], localization_summary[1, "Positive"], chi_square_localization_result, "", round(chi_square_localization$p.value, 4)),
+  c("Geographic localization", "South", localization_summary[2, "Negative"], localization_summary[2, "Positive"], "", "", "")
+)
+
+
+# Affichage du tableau avec kable
+table_data %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Culex quinquefasciatus") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+localization_summary <- as.data.frame.matrix(localization_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+localization_summary$Negative <- paste0(localization_summary$Negative, " (", round(localization_table_percent[, "Negative"], 2), "%)")
+localization_summary$Positive <- paste0(localization_summary$Positive, " (", round(localization_table_percent[, "Positive"], 2), "%)")
+
+# Combiner les tableaux
+final_summary <- rbind(
+  cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary),
+  cbind(Variable = "Geographic localization", Category = rownames(localization_summary), localization_summary)
+)
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex/geographic localization and prevalence of Wolbachia in the population of Culex quinquefasciatus") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Relationship between sex and prevalence of Wolbachia in the population of Culex tigripes
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Filtrage de la base de données
+Culex_tigripes <- bd %>% filter(Species=="Culex tigripes")
+
+# Calcul des totaux
+sex_table <- table(Culex_tigripes$Sex, Culex_tigripes$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+
+# Fisher test pour le sexe
+fisher_sex <- fisher.test(sex_table)
+fisher_sex
+```
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+#localization_summary <- as.data.frame.matrix(localization_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+
+# Combiner les tableaux
+final_summary <-   cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary)
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex prevalence of Wolbachia in the population of Culex tigripes") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Relationship between sex and prevalence of Wolbachia in the population of Culex theilleri
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Filtrage de la base de données
+Culex_theileri <- bd %>% filter(Species=="Culex theileri")
+
+# Calcul des totaux
+sex_table <- table(Culex_theileri$Sex, Culex_theileri$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+
+# Fisher test pour le sexe
+fisher_sex <- fisher.test(sex_table)
+fisher_sex
+```
+
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+localization_summary <- as.data.frame.matrix(localization_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+# Combiner les tableaux
+final_summary <- cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary)
+ 
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex prevalence of Wolbachia in the population of Culex theileri") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Relationship between sex and prevalence of Wolbachia in the population of all mosquito species
+
+## Tests's results
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Calcul des totaux
+sex_table <- table(bd$Sex, bd$`Statut Wolbachia`)
+
+# Calcul des pourcentages
+sex_table_percent <- prop.table(sex_table, 1) * 100
+
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+# Chi-square test pour le sexe
+chi_square_sex <- chisq.test(sex_table,, correct = FALSE)
+chi_square_sex
+
+```
+
+
+## Frequencies's table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Préparation des données pour le tableau
+sex_summary <- as.data.frame.matrix(sex_table)
+
+# Ajouter les pourcentages
+sex_summary$Negative <- paste0(sex_summary$Negative, " (", round(sex_table_percent[, "Negative"], 2), "%)")
+sex_summary$Positive <- paste0(sex_summary$Positive, " (", round(sex_table_percent[, "Positive"], 2), "%)")
+
+
+# Combiner les tableaux
+final_summary <- cbind(Variable = "Sex", Category = rownames(sex_summary), sex_summary)
+
+
+# Convertir en tableau formaté
+
+final_summary %>%
+  kable("html", align = 'c', caption = "Relationship between sex prevalence of Wolbachia in the population for all mosquito species") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Cartogaphy
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+### Shapefiles
+adm1 <- read_sf("shapefiles/civadm1.shp", quiet = TRUE)
+adm2 <- read_sf("shapefiles/civadm2.shp", quiet = TRUE)
+adm3 <- read_sf("shapefiles/civadm3.shp", quiet = TRUE)
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Cartographie
+## Côte d'Ivoire
+crtt <- ggplot(data = adm1) + 
+  geom_sf( color = "black", linewidth = 0.2,fill = "white")  +
+  #geom_sf(data = adm3, color="white", linewidth = 0.9) +
+  geom_sf(data = subset(adm3, ADM3_FR == "Bouaké"), fill = "red", color = "black") +
+  geom_sf(data = subset(adm3, ADM3_FR == "Boundiali"), fill = "red", color = "black") +
+  geom_sf(data = subset(adm3, ADM3_FR == "Abidjan"), fill = "red", color = "black") +
+  geom_sf(data = subset(adm3, ADM3_FR == "Korhogo"), fill = "red", color = "black") +
+  geom_sf(data = subset(adm3, ADM3_FR == "Bingerville"), fill = "red", color = "black") +
+  theme_void()+ 
+  labs(title = "Ivory Cost")+theme_void()
+
+bd$Longitude <- as.numeric(bd$Longitude)
+bd$Latitude <- as.numeric(bd$Latitude)
+
+## Bouaké
+Bouak <- filter(adm3,ADM3_FR=="Bouaké")
+bouak = ggplot(data=Bouak)+
+  geom_sf( color="black", fill="white")+
+  geom_sf_label(aes(label=ADM3_FR),nudge_x = 0.1,
+                nudge_y = 0.23, size=3)+ 
+  geom_jitter(data=(filter(bd,ADM3_FR=="Bouaké")%>% distinct(Species,`Capture_site`,.keep_all = TRUE)),
+              aes(x = Longitude,y=Latitude, shape=`Capture_site`,
+                  color=Species), size=2,width = 0.1, height  = 0.1)+theme_void()+
+  theme(legend.position = "none")
+
+
+
+
+
+## Boundiali
+Boundiali <- filter(adm3,ADM3_FR=="Boundiali")
+boundiali = ggplot(data=Boundiali)+
+  geom_sf( color="black", fill="white")+
+  geom_sf_label(aes(label=ADM3_FR),nudge_x = 0.1,
+                nudge_y = 0.23, size=3) +
+  geom_jitter(data=(filter(bd,ADM3_FR=="Boundiali")%>% distinct(Species,`Capture_site`,.keep_all = TRUE)),
+                          aes(x = Longitude-0.03,y=Latitude, shape=`Capture_site`,
+                              color=Species), size=2,width = 0.1, height  = -0.18)+
+  theme_void()+theme(legend.position = "none")
+
+
+
+## Abidjan
+Abidjan <- filter(adm3,ADM3_FR=="Abidjan")
+abidjan = ggplot(data=Abidjan)+
+  geom_sf( color="black", fill="white")+
+  geom_sf_label(aes(label=ADM3_FR),nudge_x = 0.009,
+                nudge_y = 0.2, size=3) +
+  geom_jitter(data=(filter(bd,ADM3_FR=="Abidjan")%>% distinct(Species,`Capture_site`,.keep_all = TRUE)),
+                                  aes(x = Longitude+0.04,y=Latitude, shape=`Capture_site`,
+                                      color=Species), size=2,width = 0.01, height  = 0.01)+
+  theme_void()+theme(legend.position = "none")
+
+
+
+## Bingerville
+Bingerville <- filter(adm3,ADM3_FR=="Bingerville")
+bingerville = ggplot(data=Bingerville)+
+  geom_sf( color="black", fill="white")+
+  geom_sf_label(data=Bingerville,aes(label=ADM3_FR),nudge_x = 0.085,
+                nudge_y = 0.08, size=3)+
+ geom_jitter(data=filter(bd,ADM3_FR=="Bingerville")%>% distinct(Species,`Capture_site`,.keep_all = TRUE),
+       aes(x = Longitude,y=Latitude, shape=`Capture_site`,
+         color=Species), size=2,width = 0.03, height  = 0.01)+
+  theme_void()+theme(legend.position = "none")
+
+
+
+## Korhogo
+Korhogo <- filter(adm3,ADM3_FR=="Korhogo")
+korhogo = ggplot(data=Korhogo)+
+  geom_sf( color="black", fill="white")+
+  geom_sf_label(aes(label=ADM3_FR),nudge_x = 0.082,
+                nudge_y = 0.11, size=3) +
+  geom_jitter(data=(filter(bd,ADM3_FR=="Korhogo")%>% 
+                distinct(Species,`Capture_site`,.keep_all = TRUE)),
+   aes(x = Longitude-0.05,y=Latitude+0.04, shape=`Capture_site`,
+      color=Species), size=2,width = 0.03, height  = 0.03)+
+  theme_void()+theme(legend.position = "none")#+coord_sf(xlim=c(-5.91,-5.533369),ylim=c(9.386580,9.63))
+
+
+
+## Assemblage des cartes
+arrow_angle_bfa = -50
+arrow_length_bfa = 0.3
+arrow_end_length_bfa <- unit(0.7, "cm")
+
+
+pllt = plot_grid(plot_grid(boundiali,bouak,ncol=1),plot_grid(crtt,abidjan,
+  ncol = 1,rel_widths = c(2,1),rel_heights = c(2,1),align = "hv"),
+  plot_grid(korhogo,bingerville, ncol=1),ncol=3,rel_widths = c(1,2,1),
+  rel_heights = c(2,1,2), align = "hv")+
+  theme_light()+ geom_segment(aes(x = 0.46, y = 0.86, xend = 0.22, yend = 0.87), 
+               arrow = arrow(angle = 30,length = unit(arrow_length_bfa, "cm"),ends="last",type = "closed"), color = "black", size = 0.6) + 
+  geom_segment(aes(x = 0.5, y = 0.86, xend = 0.75, yend = 0.87), 
+               arrow = arrow(angle = 30,length = unit(arrow_length_bfa, "cm"),ends="last",type = "closed"), color = "black", size = 0.6) + 
+  geom_segment(aes(x = 0.5, y = 0.7, xend = 0.23, yend = 0.425), 
+               arrow = arrow(angle = 30,length = unit(arrow_length_bfa, "cm"),ends="last",type = "closed"), color = "black", size = 0.6) + 
+  geom_segment(aes(x = 0.55, y = 0.432, xend = 0.55, yend = 0.275), 
+               arrow = arrow(angle = 30,length = unit(arrow_length_bfa, "cm"),ends="last",type = "closed"), color = "black", size = 0.6) + 
+  geom_segment( aes(x = 0.57, y = 0.44, xend = 0.76, yend = 0.27), 
+               arrow = arrow(angle = 30,length = unit(arrow_length_bfa, "cm"),ends="last",type = "closed"), color = "black", size = 0.6) + 
+  labs(title= "Distribution of species by Capture site", hjust=0.5,caption = "Source : GADM\n Data : Wolbachia data \n Author : Sitapha KONATE") +
+  geom_point(data=bd,aes(x = Longitude,y=Latitude, shape=`Capture_site`,color=Species))+theme(legend.position = "bottom")#+ warning(call. = FALSE)
+pllt
+```
+
+# Barplot
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Manipulation des données
+data_P.W_E <-  filter(bd, Species %in% c("Aedes aegypti","Anopheles gambiae s.l.", 
+                                                       "Culex quinquefasciatus"))
+  
+  
+db <- data_P.W_E %>% 
+    dplyr::group_by(Gergraphic.localization, Species)%>% 
+    dplyr::mutate(Tot = n()) #%>% 
+  
+  db <- db %>% 
+    dplyr::group_by(Gergraphic.localization, Species, `Statut Wolbachia`)%>% 
+    dplyr::mutate(effectif = n(), freq=round(effectif*100/Tot,2)) %>% 
+    distinct(Gergraphic.localization, Species, `Statut Wolbachia`,.keep_all = TRUE)
+  
+## Calcul de l'intervalle de confiance
+  db$yminn=NA
+  db$ymaxx=NA
+  
+  
+  for (i in 1:length(db$yminn)) {
+    db$yminn[i]=round((prop.test(db$effectif[i],
+                                 db$Tot[i],
+                                 conf.level = 0.95)$conf.int[1]*100),2)
+    
+    db$ymaxx[i]=round((prop.test(db$effectif[i],
+                                 db$Tot[i],
+                                 conf.level = 0.95)$conf.int[2]*100),2)
+  }
+
+  db$Gergraphic.localization <- factor(db$Gergraphic.localization,levels = c("South","Center","North"))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Diagramme en barres 
+  plt <- ggplot(data=db,aes(x= Gergraphic.localization,y=freq, fill=`Statut Wolbachia`))+
+    geom_bar(stat="identity", position = 'dodge', width = 0.7)+
+    facet_wrap(~Species)+
+    theme_bw()+geom_errorbar(aes(ymin=yminn,ymax=ymaxx),position = position_dodge2(width = 0.5, padding = 0.5))
+  
+  
+  plt +
+    scale_fill_manual(labels = aes(fill=`Statut Wolbachia`), 
+                      values = c("black", "gray")) +
+    labs(x="Gergraphic localization",
+         y=expression("prevalence of "~italic(Wolbachia)~" %"))+
+    theme(axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+          axis.title.x = element_text(size = 12, color="black"),
+          axis.title.y = element_text(size = 12, color="black"),
+          strip.text.x = element_text(size=12, color="black",face="italic"),
+          axis.text.y = element_text(size = 11, color = "black"),
+          legend.title = element_text(size = 12),
+          panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    scale_x_discrete(labels=c("South","Center","North"))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+dbb <- filter(db,`Statut Wolbachia`=="Positive")
+  
+  plt1 <- ggplot(data=dbb,aes(x= Species,y=freq))+
+    geom_bar(aes( fill=Gergraphic.localization), colour="black",stat="identity", position = position_dodge2(width = 0.5, padding = 0.5), width = 0.8)+
+    geom_text(data=dbb,aes(label=freq, group=Gergraphic.localization), position = position_dodge(0.5),
+              vjust = -0.3,hjust=0.3, size = 3.5)+
+    scale_fill_manual(labels = aes(fill=Gergraphic.localization), 
+                      values = c("black","white", "gray")) +
+    theme_bw()#+geom_errorbar(aes(ymin=yminn,ymax=ymaxx,group=Capture_site),position = position_dodge2(width = 0.5, padding = 0.5))
+  
+  
+  plt1 +labs(x="Gergraphic localization",
+         y=expression("prevalence of "~italic(Wolbachia)~" %"),
+         title = "Prevalence of species by geographical location")+
+    theme(#axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+          axis.title.x = element_text(size = 12, color="black"),
+          axis.title.y = element_text(size = 12, color="black"),
+          strip.text.x = element_text(size=12, color="black",face="italic"),
+          axis.text.y = element_text(size = 11, color = "black"),
+          legend.title = element_text(size = 12),
+          panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    theme(legend.position = "bottom")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plt2 <- ggplot(data=dbb,aes(x= Species,y=freq))+
+    geom_bar(aes( fill=Gergraphic.localization), colour="black",stat="identity", position = position_dodge2(width = 0.5, padding = 0.5), width = 0.8)+
+    geom_text(data=dbb,aes(label=freq, group=Gergraphic.localization), position = position_dodge(0.5),
+              vjust = -0.3,hjust=0.3, size = 3.5)+
+    scale_fill_manual(labels = aes(fill=Gergraphic.localization), 
+                      values = c("black","white", "gray")) +
+    theme_bw()
+  
+  plt2 +labs(x="Gergraphic localization",
+             y=expression("prevalence of "~italic(Wolbachia)~" %"),
+             title = "Prevalence of species by geographical location")+
+    theme(#axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+      axis.title.x = element_text(size = 12, color="black"),
+      axis.title.y = element_text(size = 12, color="black"),
+      strip.text.x = element_text(size=12, color="black",face="italic"),
+      axis.text.y = element_text(size = 11, color = "black"),
+      legend.title = element_text(size = 12),
+      panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    theme(legend.position = "bottom")
+  
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ plt3 <- ggplot(data=dbb,aes(x= Gergraphic.localization,y=freq, fill=Gergraphic.localization))+
+    geom_bar(stat="identity", position = 'dodge', width = 0.7, color="black")+
+    geom_text(data=dbb,aes(label=freq, group=Gergraphic.localization), position = position_dodge(0.5),
+              vjust = -0.3,hjust=0.3, size = 3.5)+
+    facet_wrap(~Species)+ 
+    theme_bw()+geom_errorbar(aes(ymin=yminn,ymax=ymaxx),
+                             position = position_dodge2(width = 0.5, padding = 0.5))+
+  theme(legend.position="bottom")
+  
+  plt3 +
+    scale_fill_manual(labels = aes(fill=`Statut Wolbachia`), 
+                      values = c("black","white", "gray")) +
+    labs(x="Gergraphic localization",
+         y=expression("prevalence of "~italic(Wolbachia)~" %"),
+         title = "Prevalence of species by geographical location")+
+    theme(axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+          axis.title.x = element_text(size = 12, color="black"),
+          axis.title.y = element_text(size = 12, color="black"),
+          strip.text.x = element_text(size=12, color="black",face="italic"),
+          axis.text.y = element_text(size = 11, color = "black"),
+          legend.title = element_text(size = 12),
+          panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    scale_x_discrete(labels=c("South","Center","North"))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plt4 <- ggplot(data=dbb,aes(x= Gergraphic.localization,y=freq, fill=Gergraphic.localization))+
+    geom_bar(stat="identity", position = 'dodge', width = 0.7, color="black")+
+    geom_text(data=dbb,aes(label=freq, group=Gergraphic.localization), position = position_dodge(0.5),
+              vjust = -0.3,hjust=0.3, size = 3.5)+
+    facet_wrap(~Species)+
+    theme_bw()+ 
+    theme(legend.position="bottom")
+  
+  plt4 +
+    scale_fill_manual(labels = aes(fill=`Statut Wolbachia`), 
+                      values = c("black","white", "gray")) +
+    labs(x="Gergraphic localization",
+         y=expression("prevalence of "~italic(Wolbachia)~" %"),
+         title = "Prevalence of species by geographical location")+
+    theme(axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+          axis.title.x = element_text(size = 12, color="black"),
+          axis.title.y = element_text(size = 12, color="black"),
+          strip.text.x = element_text(size=12, color="black",face="italic"),
+          axis.text.y = element_text(size = 11, color = "black"),
+          legend.title = element_text(size = 12),
+          panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    scale_x_discrete(labels=c("South","Center","North"))
+  
+```
+
+
+# Sup
+```{r}
+# Manipulation des données
+data_P.W_E <-  filter(bd, Species %in% c("Aedes aegypti","Anophele gambiae", 
+                                                       "Culex quinquefasciatus"))
+  
+  
+db <- data_P.W_E %>% 
+    dplyr::group_by(Gergraphic.localization, Species)%>% 
+    dplyr::mutate(Tot = n()) #%>% 
+  
+  db <- db %>% 
+    dplyr::group_by(Gergraphic.localization, Species, `Statut Wolbachia`)%>% 
+    dplyr::mutate(effectif = n(), freq=round(effectif*100/Tot,2)) %>% 
+    distinct(Gergraphic.localization, Species, `Statut Wolbachia`,.keep_all = TRUE) %>% filter(`Statut Wolbachia`=="Positive")
+  
+## Calcul de l'intervalle de confiance
+  db$yminn=NA
+  db$ymaxx=NA
+  
+  
+  for (i in 1:length(db$yminn)) {
+    db$yminn[i]=round((prop.test(db$effectif[i],
+                                 db$Tot[i],
+                                 conf.level = 0.95)$conf.int[1]*100),2)
+    
+    db$ymaxx[i]=round((prop.test(db$effectif[i],
+                                 db$Tot[i],
+                                 conf.level = 0.95)$conf.int[2]*100),2)
+  }
+
+  db$Gergraphic.localization <- factor(db$Gergraphic.localization,levels = c("South","Center","North"))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Diagramme en barres 
+  plt4 <- ggplot(data=db,aes(x= Gergraphic.localization,y=freq, fill=Gergraphic.localization))+
+    geom_bar(stat="identity", position = 'dodge', width = 0.7, color="black")+
+    #geom_text(data=db,aes(label=freq, group=Gergraphic.localization), position = position_dodge(0.5),
+              #vjust = -0.3,hjust=0.3, size = 3.5)+
+    facet_wrap(~Species)+
+    theme_bw()+ geom_errorbar(aes(ymin=yminn,ymax=ymaxx),
+                             position = position_dodge2(width = 0.5, padding = 0.5))+
+    theme(legend.position="bottom")
+  
+  plt4 +
+    scale_fill_manual(labels = aes(fill=`Statut Wolbachia`), 
+                      values = c("black","white", "gray")) +
+    labs(x="Gergraphic localization",
+         y=expression("prevalence of "~italic(Wolbachia)~" %"),
+         title = "Prevalence of species by geographical location")+
+    theme(axis.text.x = element_text(angle = 45, hjust=1, size = 11, color = "black"),
+          axis.title.x = element_text(size = 12, color="black"),
+          axis.title.y = element_text(size = 12, color="black"),
+          strip.text.x = element_text(size=12, color="black",face="italic"),
+          axis.text.y = element_text(size = 11, color = "black"),
+          legend.title = element_text(size = 12),
+          panel.grid = element_blank())+
+    guides(fill=guide_legend(title=" "))+
+    scale_x_discrete(labels=c("South","Center","North"))
+```
